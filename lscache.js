@@ -15,20 +15,19 @@
  * limitations under the License.
  */
 
-/* jshint undef:true, browser:true, node:true */
 /* global define */
 
 (function (root, factory) {
-    if (typeof define === 'function' && define.amd) {
+  if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
-        define([], factory);
-    } else if (typeof module !== "undefined" && module.exports) {
+    define([], factory);
+  } else if (typeof module !== 'undefined' && module.exports) {
         // CommonJS/Node module
-        module.exports = factory();
-    } else {
+    module.exports = factory();
+  } else {
         // Browser globals
-        root.lscache = factory();
-    }
+    root.lscache = factory();
+  }
 }(this, function () {
 
   // Prefix for all lscache keys
@@ -40,11 +39,8 @@
   // expiration date radix (set to Base-36 for most space savings)
   var EXPIRY_RADIX = 10;
 
-  // time resolution in minutes
-  var EXPIRY_UNITS = 60 * 1000;
-
   // ECMAScript max Date (epoch + 1e8 days)
-  var MAX_DATE = Math.floor(8.64e15/EXPIRY_UNITS);
+  var MAX_DATE = Math.floor(8.64e15);
 
   var cachedStorage;
   var cachedJSON;
@@ -80,11 +76,11 @@
       cachedStorage = true;
     } catch (e) {
         // If we hit the limit, and we don't have an empty localStorage then it means we have support
-        if (isOutOfSpace(e) && localStorage.length) {
-            cachedStorage = true; // just maxed it out and even the set test failed.
-        } else {
-            cachedStorage = false;
-        }
+      if (isOutOfSpace(e) && localStorage.length) {
+        cachedStorage = true; // just maxed it out and even the set test failed.
+      } else {
+        cachedStorage = false;
+      }
     }
     return cachedStorage;
   }
@@ -130,7 +126,7 @@
    * @return {number}
    */
   function currentTime() {
-    return Math.floor((new Date().getTime())/EXPIRY_UNITS);
+    return (new Date()).getTime();
   }
 
   /**
@@ -190,8 +186,8 @@
   function warn(message, err) {
     if (!warnings) return;
     if (!('console' in window) || typeof window.console.warn !== 'function') return;
-    window.console.warn("lscache - " + message);
-    if (err) window.console.warn("lscache - The error was: " + err.message);
+    window.console.warn('lscache - ' + message);
+    if (err) window.console.warn('lscache - The error was: ' + err.message);
   }
 
   var lscache = {
@@ -204,13 +200,15 @@
     set: function(key, value, time) {
       if (!supportsStorage()) return;
 
+      var cachedValue = value;
+
       // If we don't get a string value, try to stringify
       // In future, localStorage may properly support storing non-strings
       // and this can be removed.
 
       if (!supportsJSON()) return;
       try {
-        value = JSON.stringify(value);
+        cachedValue = JSON.stringify(value);
       } catch (e) {
         // Sometimes we can't stringify due to circular refs
         // in complex objects, so we won't bother storing then.
@@ -218,7 +216,7 @@
       }
 
       try {
-        setItem(key, value);
+        setItem(key, cachedValue);
       } catch (e) {
         if (isOutOfSpace(e)) {
           // If we exceeded the quota, then we will sort
@@ -236,29 +234,29 @@
             storedKeys.push({
               key: key,
               size: (getItem(key) || '').length,
-              expiration: expiration
+              expiration: expiration,
             });
           });
           // Sorts the keys with oldest expiration time last
           storedKeys.sort(function(a, b) { return (b.expiration-a.expiration); });
 
-          var targetSize = (value||'').length;
+          var targetSize = (cachedValue||'').length;
           while (storedKeys.length && targetSize > 0) {
             storedKey = storedKeys.pop();
-            warn("Cache is full, removing item with key '" + key + "'");
+            warn('Cache is full, removing item with key \'' + key + '\'');
             flushItem(storedKey.key);
             targetSize -= storedKey.size;
           }
           try {
-            setItem(key, value);
+            setItem(key, cachedValue);
           } catch (e) {
             // value may be larger than total quota
-            warn("Could not add item with key '" + key + "', perhaps it's too big?", e);
+            warn('Could not add item with key \'' + key + '\', perhaps it\'s too big?', e);
             return;
           }
         } else {
           // If it was some other error, just give up.
-          warn("Could not add item with key '" + key + "'", e);
+          warn('Could not add item with key \'' + key + '\'', e);
           return;
         }
       }
@@ -360,7 +358,7 @@
      */
     enableWarnings: function(enabled) {
       warnings = enabled;
-    }
+    },
   };
 
   // Return the module

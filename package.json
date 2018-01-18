@@ -12,6 +12,7 @@
   "main": "lscache",
   "version": "1.0.0",
   "devDependencies": {
+    "eslint": "^4.15.0",
     "grunt-contrib-qunit": "1.3.x",
     "grunt": "1.0.x",
     "grunt-browserify": "5.0.x",
