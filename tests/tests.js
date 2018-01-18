@@ -24,7 +24,7 @@ var startTests = function (ccache) {
   test('Testing set() and get() with string', function() {
     var key = 'thekey';
     var value = 'thevalue';
-    ccache.set(key, value, 1);
+    ccache.set(key, value, 1 * 60 * 1000);
     if (ccache.supported()) {
       equal(ccache.get(key), value, 'We expect value to be ' + value);
     } else {
@@ -39,28 +39,28 @@ var startTests = function (ccache) {
 
       key = 'numberkey';
       value = 2;
-      ccache.set(key, value, 3);
+      ccache.set(key, value, 3 * 60 * 1000);
       equal(ccache.get(key)+1, value+1, 'We expect incremented value to be ' + (value+1));
 
       key = 'numberstring';
       value = '2';
-      ccache.set(key, value, 3);
+      ccache.set(key, value, 3 * 60 * 1000);
       equal(ccache.get(key), value, 'We expect number in string to be ' + value);
 
       key = 'arraykey';
       value = ['a', 'b', 'c'];
-      ccache.set(key, value, 3);
+      ccache.set(key, value, 3 * 60 * 1000);
       equal(ccache.get(key).length, value.length, 'We expect array to have length ' + value.length);
 
       key = 'objectkey';
       value = {'name': 'Pamela', 'age': 26};
-      ccache.set(key, value, 3);
+      ccache.set(key, value, 3 * 60 * 1000);
       equal(ccache.get(key).name, value.name, 'We expect name to be ' + value.name);
     });
 
     test('Testing remove()', function() {
       var key = 'thekey';
-      ccache.set(key, 'bla', 2);
+      ccache.set(key, 'bla', 2 * 60 * 1000);
       ccache.remove(key);
       equal(ccache.get(key), null, 'We expect value to be null');
     });
@@ -68,7 +68,7 @@ var startTests = function (ccache) {
     test('Testing flush()', function() {
       localStorage.setItem('outside-cache', 'not part of ccache');
       var key = 'thekey';
-      ccache.set(key, 'bla', 100);
+      ccache.set(key, 'bla', 100 * 60 * 1000);
       ccache.flush();
       equal(ccache.get(key), null, 'We expect flushed value to be null');
       equal(localStorage.getItem('outside-cache'), 'not part of ccache', 'We expect localStorage value to still persist');
@@ -80,9 +80,9 @@ var startTests = function (ccache) {
       var value2 = 'awesomer';
       var bucketName = 'BUCKETONE';
 
-      ccache.set(key, value1, 1);
+      ccache.set(key, value1, 1 * 60 * 1000);
       ccache.setBucket(bucketName);
-      ccache.set(key, value2, 1);
+      ccache.set(key, value2, 1 * 60 * 1000);
 
       equal(ccache.get(key), value2, 'We expect "' + value2 + '" to be returned for the current bucket: ' + bucketName);
       ccache.flush();
@@ -150,7 +150,7 @@ var startTests = function (ccache) {
 
       for (i = 0; i <= numKeys; i++) {
         currentKey = key + i;
-        ccache.set(currentKey, longString, i+1);
+        ccache.set(currentKey, longString, (i+1) * 60 * 1000);
       }
       // Test that last-to-expire is still there
       equal(ccache.get(currentKey), longString, 'We expect newest value to still be there');
@@ -160,7 +160,7 @@ var startTests = function (ccache) {
       // Test trying to add something thats bigger than previous items,
       // check that it is successfully added (requires removal of multiple keys)
       var veryLongString = longString + longString;
-      ccache.set(key + 'long', veryLongString, i+1);
+      ccache.set(key + 'long', veryLongString, (i+1) * 60 * 1000);
       equal(ccache.get(key + 'long'), veryLongString, 'We expect long string to get stored');
 
       // Try the same with no expiry times
@@ -179,7 +179,7 @@ var startTests = function (ccache) {
       var key = 'thekey';
       var value = 'thevalue';
       var minutes = 1;
-      ccache.set(key, value, minutes);
+      ccache.set(key, value, minutes * 60 * 1000);
       setTimeout(function() {
         equal(ccache.get(key), null, 'We expect value to be null');
         start();
@@ -193,9 +193,9 @@ var startTests = function (ccache) {
       var value2 = 'thevalue2';
       var minutes = 1;
       var bucket = 'newbucket';
-      ccache.set(key, value1, minutes * 2);
+      ccache.set(key, value1, minutes * 2 * 60 * 1000);
       ccache.setBucket(bucket);
-      ccache.set(key, value2, minutes);
+      ccache.set(key, value2, minutes * 60 * 1000);
       setTimeout(function() {
         equal(ccache.get(key), null, 'We expect value to be null for the bucket: ' + bucket);
         ccache.resetBucket();
@@ -208,8 +208,8 @@ var startTests = function (ccache) {
       localStorage.setItem('outside-cache', 'not part of ccache');
       var unexpiredKey = 'unexpiredKey';
       var expiredKey = 'expiredKey';
-      ccache.set(unexpiredKey, 'bla', 1);
-      ccache.set(expiredKey, 'blech', 1/60); // Expire after one second
+      ccache.set(unexpiredKey, 'bla', 1 * 60 * 1000);
+      ccache.set(expiredKey, 'blech', (1/60) * 60 * 1000 ); // Expire after one second
 
       setTimeout(function() {
         ccache.flushExpired();

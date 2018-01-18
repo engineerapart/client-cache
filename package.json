@@ -23,6 +23,7 @@
     "browserify-shim": "3.8.x"
   },
   "scripts": {
+    "build": "grunt",
     "lint": "eslint ./ccache.js",
     "test": "grunt test"
   },
