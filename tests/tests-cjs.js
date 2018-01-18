@@ -1,6 +1,6 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 /**
- * lscache library
+ * ccache library
  * Copyright (c) 2011, Pamela Fox
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,24 +16,23 @@
  * limitations under the License.
  */
 
-/* jshint undef:true, browser:true, node:true */
-/* global define */
+/* global define, module */
 
 (function (root, factory) {
-    if (typeof define === 'function' && define.amd) {
-        // AMD. Register as an anonymous module.
-        define([], factory);
-    } else if (typeof module !== "undefined" && module.exports) {
-        // CommonJS/Node module
-        module.exports = factory();
-    } else {
-        // Browser globals
-        root.lscache = factory();
-    }
+  if (typeof define === 'function' && define.amd) {
+    // AMD. Register as an anonymous module.
+    define([], factory);
+  } else if (typeof module !== 'undefined' && module.exports) {
+    // CommonJS/Node module
+    module.exports = factory();
+  } else {
+    // Browser globals
+    root.ccache = factory();
+  }
 }(this, function () {
 
-  // Prefix for all lscache keys
-  var CACHE_PREFIX = 'lscache-';
+  // Prefix for all ccache keys
+  var CACHE_PREFIX = 'ccache-';
 
   // Suffix for the key name on the expiration items in localStorage
   var CACHE_SUFFIX = '-cacheexpiration';
@@ -41,11 +40,8 @@
   // expiration date radix (set to Base-36 for most space savings)
   var EXPIRY_RADIX = 10;
 
-  // time resolution in minutes
-  var EXPIRY_UNITS = 60 * 1000;
-
   // ECMAScript max Date (epoch + 1e8 days)
-  var MAX_DATE = Math.floor(8.64e15/EXPIRY_UNITS);
+  var MAX_DATE = Math.floor(8.64e15);
 
   var cachedStorage;
   var cachedJSON;
@@ -58,7 +54,7 @@
   // it's not straightforward due to FF4 issues.
   // It's not run at parse-time as it takes 200ms in Android.
   function supportsStorage() {
-    var key = '__lscachetest__';
+    var key = '__ccachetest__';
     var value = key;
 
     if (cachedStorage !== undefined) {
@@ -81,23 +77,22 @@
       cachedStorage = true;
     } catch (e) {
         // If we hit the limit, and we don't have an empty localStorage then it means we have support
-        if (isOutOfSpace(e) && localStorage.length) {
-            cachedStorage = true; // just maxed it out and even the set test failed.
-        } else {
-            cachedStorage = false;
-        }
+      if (isOutOfSpace(e) && localStorage.length) {
+        cachedStorage = true; // just maxed it out and even the set test failed.
+      } else {
+        cachedStorage = false;
+      }
     }
     return cachedStorage;
   }
 
   // Check to set if the error is us dealing with being out of space
   function isOutOfSpace(e) {
-    if (e && e.name === 'QUOTA_EXCEEDED_ERR' ||
-            e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
-            e.name === 'QuotaExceededError') {
-        return true;
-    }
-    return false;
+    return e && (
+      e.name === 'QUOTA_EXCEEDED_ERR' ||
+      e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+      e.name === 'QuotaExceededError'
+    );
   }
 
   // Determines if native JSON (de-)serialization is supported in the browser.
@@ -132,7 +127,7 @@
    * @return {number}
    */
   function currentTime() {
-    return Math.floor((new Date().getTime())/EXPIRY_UNITS);
+    return (new Date()).getTime();
   }
 
   /**
@@ -192,11 +187,11 @@
   function warn(message, err) {
     if (!warnings) return;
     if (!('console' in window) || typeof window.console.warn !== 'function') return;
-    window.console.warn("lscache - " + message);
-    if (err) window.console.warn("lscache - The error was: " + err.message);
+    window.console.warn('ccache - ' + message);
+    if (err) window.console.warn('ccache - The error was: ' + err.message);
   }
 
-  var lscache = {
+  var ccache = {
     /**
      * Stores the value in localStorage. Expires after specified number of minutes.
      * @param {string} key
@@ -206,13 +201,15 @@
     set: function(key, value, time) {
       if (!supportsStorage()) return;
 
+      var cachedValue = value;
+
       // If we don't get a string value, try to stringify
       // In future, localStorage may properly support storing non-strings
       // and this can be removed.
 
       if (!supportsJSON()) return;
       try {
-        value = JSON.stringify(value);
+        cachedValue = JSON.stringify(value);
       } catch (e) {
         // Sometimes we can't stringify due to circular refs
         // in complex objects, so we won't bother storing then.
@@ -220,7 +217,7 @@
       }
 
       try {
-        setItem(key, value);
+        setItem(key, cachedValue);
       } catch (e) {
         if (isOutOfSpace(e)) {
           // If we exceeded the quota, then we will sort
@@ -238,29 +235,29 @@
             storedKeys.push({
               key: key,
               size: (getItem(key) || '').length,
-              expiration: expiration
+              expiration: expiration,
             });
           });
           // Sorts the keys with oldest expiration time last
           storedKeys.sort(function(a, b) { return (b.expiration-a.expiration); });
 
-          var targetSize = (value||'').length;
+          var targetSize = (cachedValue||'').length;
           while (storedKeys.length && targetSize > 0) {
             storedKey = storedKeys.pop();
-            warn("Cache is full, removing item with key '" + key + "'");
+            warn('Cache is full, removing item with key \'' + key + '\'');
             flushItem(storedKey.key);
             targetSize -= storedKey.size;
           }
           try {
-            setItem(key, value);
+            setItem(key, cachedValue);
           } catch (e) {
             // value may be larger than total quota
-            warn("Could not add item with key '" + key + "', perhaps it's too big?", e);
+            warn('Could not add item with key \'' + key + '\', perhaps it\'s too big?', e);
             return;
           }
         } else {
           // If it was some other error, just give up.
-          warn("Could not add item with key '" + key + "'", e);
+          warn('Could not add item with key \'' + key + '\'', e);
           return;
         }
       }
@@ -321,7 +318,7 @@
     },
 
     /**
-     * Flushes all lscache items and expiry markers without affecting rest of localStorage
+     * Flushes all ccache items and expiry markers without affecting rest of localStorage
      */
     flush: function() {
       if (!supportsStorage()) return;
@@ -332,7 +329,7 @@
     },
 
     /**
-     * Flushes expired lscache items and expiry markers without affecting rest of localStorage
+     * Flushes expired ccache items and expiry markers without affecting rest of localStorage
      */
     flushExpired: function() {
       if (!supportsStorage()) return;
@@ -343,7 +340,7 @@
     },
 
     /**
-     * Appends CACHE_PREFIX so lscache will partition data in to different buckets.
+     * Appends CACHE_PREFIX so ccache will partition data in to different buckets.
      * @param {string} bucket
      */
     setBucket: function(bucket) {
@@ -351,7 +348,7 @@
     },
 
     /**
-     * Resets the string being appended to CACHE_PREFIX so lscache will use the default storage behavior.
+     * Resets the string being appended to CACHE_PREFIX so ccache will use the default storage behavior.
      */
     resetBucket: function() {
       cacheBucket = '';
@@ -362,11 +359,11 @@
      */
     enableWarnings: function(enabled) {
       warnings = enabled;
-    }
+    },
   };
 
   // Return the module
-  return lscache;
+  return ccache;
 }));
 
 },{}],2:[function(require,module,exports){
@@ -380,81 +377,80 @@ a&&(a.innerHTML="<a href='"+o({filter:void 0,module:void 0,testId:void 0})+"'>"+
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{}],3:[function(require,module,exports){
-/* jshint undef:true, browser:true, node:true */
-/* global QUnit, test, equal, asyncTest, start, define */
+/* global QUnit, test, equal, asyncTest, start, define, module, require */
 
-var startTests = function (lscache) {
-  
+var startTests = function (ccache) {
+
   var originalConsole = window.console;
 
-  QUnit.module('lscache', {
+  QUnit.module('ccache', {
     setup: function() {
       // Reset localStorage before each test
       try {
         localStorage.clear();
-      } catch(e) {}
+      } catch(e) {} // eslint-disable-line no-empty
     },
     teardown: function() {
       // Reset localStorage after each test
       try {
         localStorage.clear();
-      } catch(e) {}
+      } catch(e) {} // eslint-disable-line no-empty
       window.console = originalConsole;
-      lscache.enableWarnings(false);
-    }
+      ccache.enableWarnings(false);
+    },
   });
 
   test('Testing set() and get() with string', function() {
     var key = 'thekey';
     var value = 'thevalue';
-    lscache.set(key, value, 1);
-    if (lscache.supported()) {
-      equal(lscache.get(key), value, 'We expect value to be ' + value);
+    ccache.set(key, value, 1);
+    if (ccache.supported()) {
+      equal(ccache.get(key), value, 'We expect value to be ' + value);
     } else {
-      equal(lscache.get(key), null, 'We expect null value');
+      equal(ccache.get(key), null, 'We expect null value');
     }
   });
 
-  if (lscache.supported()) {
+  if (ccache.supported()) {
 
     test('Testing set() with non-string values', function() {
       var key, value;
 
       key = 'numberkey';
       value = 2;
-      lscache.set(key, value, 3);
-      equal(lscache.get(key)+1, value+1, 'We expect incremented value to be ' + (value+1));
+      ccache.set(key, value, 3);
+      equal(ccache.get(key)+1, value+1, 'We expect incremented value to be ' + (value+1));
 
       key = 'numberstring';
       value = '2';
-      lscache.set(key, value, 3);
-      equal(lscache.get(key), value, 'We expect number in string to be ' + value);
+      ccache.set(key, value, 3);
+      equal(ccache.get(key), value, 'We expect number in string to be ' + value);
 
       key = 'arraykey';
       value = ['a', 'b', 'c'];
-      lscache.set(key, value, 3);
-      equal(lscache.get(key).length, value.length, 'We expect array to have length ' + value.length);
+      ccache.set(key, value, 3);
+      equal(ccache.get(key).length, value.length, 'We expect array to have length ' + value.length);
 
       key = 'objectkey';
       value = {'name': 'Pamela', 'age': 26};
-      lscache.set(key, value, 3);
-      equal(lscache.get(key).name, value.name, 'We expect name to be ' + value.name);
+      ccache.set(key, value, 3);
+      equal(ccache.get(key).name, value.name, 'We expect name to be ' + value.name);
     });
 
     test('Testing remove()', function() {
       var key = 'thekey';
-      lscache.set(key, 'bla', 2);
-      lscache.remove(key);
-      equal(lscache.get(key), null, 'We expect value to be null');
+      ccache.set(key, 'bla', 2);
+      ccache.remove(key);
+      equal(ccache.get(key), null, 'We expect value to be null');
     });
 
     test('Testing flush()', function() {
-      localStorage.setItem('outside-cache', 'not part of lscache');
+      localStorage.setItem('outside-cache', 'not part of ccache');
       var key = 'thekey';
-      lscache.set(key, 'bla', 100);
-      lscache.flush();
-      equal(lscache.get(key), null, 'We expect flushed value to be null');
-      equal(localStorage.getItem('outside-cache'), 'not part of lscache', 'We expect localStorage value to still persist');
+      ccache.set(key, 'bla', 100);
+      ccache.flush();
+      equal(ccache.get(key), null, 'We expect flushed value to be null');
+      equal(localStorage.getItem('outside-cache'), 'not part of ccache', 'We expect localStorage value to still persist');
     });
 
     test('Testing setBucket()', function() {
@@ -463,28 +459,28 @@ var startTests = function (lscache) {
       var value2 = 'awesomer';
       var bucketName = 'BUCKETONE';
 
-      lscache.set(key, value1, 1);
-      lscache.setBucket(bucketName);
-      lscache.set(key, value2, 1);
+      ccache.set(key, value1, 1);
+      ccache.setBucket(bucketName);
+      ccache.set(key, value2, 1);
 
-      equal(lscache.get(key), value2, 'We expect "' + value2 + '" to be returned for the current bucket: ' + bucketName);
-      lscache.flush();
-      equal(lscache.get(key), null, 'We expect "' + value2 + '" to be flushed for the current bucket');
-      lscache.resetBucket();
-      equal(lscache.get(key), value1, 'We expect "' + value1 + '", the non-bucket value, to persist');
+      equal(ccache.get(key), value2, 'We expect "' + value2 + '" to be returned for the current bucket: ' + bucketName);
+      ccache.flush();
+      equal(ccache.get(key), null, 'We expect "' + value2 + '" to be flushed for the current bucket');
+      ccache.resetBucket();
+      equal(ccache.get(key), value1, 'We expect "' + value1 + '", the non-bucket value, to persist');
     });
 
     test('Testing setWarnings()', function() {
       window.console = {
         calls: 0,
-        warn: function() { this.calls++; }
+        warn: function() { this.calls++; },
       };
 
       var longString = (new Array(10000)).join('s');
       var num = 0;
       while(num < 10000) {
         try {
-          localStorage.setItem("key" + num, longString);
+          localStorage.setItem('key' + num, longString);
           num++;
         } catch (e) {
           break;
@@ -493,19 +489,19 @@ var startTests = function (lscache) {
       localStorage.clear();
 
       for (var i = 0; i <= num; i++) {
-        lscache.set("key" + i, longString);
+        ccache.set('key' + i, longString);
       }
 
       // Warnings not enabled, nothing should be logged
       equal(window.console.calls, 0);
 
-      lscache.enableWarnings(true);
+      ccache.enableWarnings(true);
 
-      lscache.set("key" + i, longString);
-      equal(window.console.calls, 1, "We expect one warning to have been printed");
+      ccache.set('key' + i, longString);
+      equal(window.console.calls, 1, 'We expect one warning to have been printed');
 
       window.console = null;
-      lscache.set("key" + i, longString);
+      ccache.set('key' + i, longString);
     });
 
     test('Testing quota exceeding', function() {
@@ -533,27 +529,27 @@ var startTests = function (lscache) {
 
       for (i = 0; i <= numKeys; i++) {
         currentKey = key + i;
-        lscache.set(currentKey, longString, i+1);
+        ccache.set(currentKey, longString, i+1);
       }
       // Test that last-to-expire is still there
-      equal(lscache.get(currentKey), longString, 'We expect newest value to still be there');
+      equal(ccache.get(currentKey), longString, 'We expect newest value to still be there');
       // Test that the first-to-expire is kicked out
-      equal(lscache.get(key + '0'), null, 'We expect oldest value to be kicked out (null)');
+      equal(ccache.get(key + '0'), null, 'We expect oldest value to be kicked out (null)');
 
       // Test trying to add something thats bigger than previous items,
       // check that it is successfully added (requires removal of multiple keys)
       var veryLongString = longString + longString;
-      lscache.set(key + 'long', veryLongString, i+1);
-      equal(lscache.get(key + 'long'), veryLongString, 'We expect long string to get stored');
+      ccache.set(key + 'long', veryLongString, i+1);
+      equal(ccache.get(key + 'long'), veryLongString, 'We expect long string to get stored');
 
       // Try the same with no expiry times
       localStorage.clear();
       for (i = 0; i <= numKeys; i++) {
         currentKey = key + i;
-        lscache.set(currentKey, longString);
+        ccache.set(currentKey, longString);
       }
       // Test that latest added is still there
-      equal(lscache.get(currentKey), longString, 'We expect value to be set');
+      equal(ccache.get(currentKey), longString, 'We expect value to be set');
     });
 
     // We do this test last since it must wait 1 minute
@@ -562,9 +558,9 @@ var startTests = function (lscache) {
       var key = 'thekey';
       var value = 'thevalue';
       var minutes = 1;
-      lscache.set(key, value, minutes);
+      ccache.set(key, value, minutes);
       setTimeout(function() {
-        equal(lscache.get(key), null, 'We expect value to be null');
+        equal(ccache.get(key), null, 'We expect value to be null');
         start();
       }, 1000*60*minutes);
     });
@@ -576,29 +572,29 @@ var startTests = function (lscache) {
       var value2 = 'thevalue2';
       var minutes = 1;
       var bucket = 'newbucket';
-      lscache.set(key, value1, minutes * 2);
-      lscache.setBucket(bucket);
-      lscache.set(key, value2, minutes);
+      ccache.set(key, value1, minutes * 2);
+      ccache.setBucket(bucket);
+      ccache.set(key, value2, minutes);
       setTimeout(function() {
-        equal(lscache.get(key), null, 'We expect value to be null for the bucket: ' + bucket);
-        lscache.resetBucket();
-        equal(lscache.get(key), value1, 'We expect value to be ' + value1 + ' for the base bucket.');
+        equal(ccache.get(key), null, 'We expect value to be null for the bucket: ' + bucket);
+        ccache.resetBucket();
+        equal(ccache.get(key), value1, 'We expect value to be ' + value1 + ' for the base bucket.');
         start();
       }, 1000*60*minutes);
     });
 
     asyncTest('Testing flush(expired)', function() {
-      localStorage.setItem('outside-cache', 'not part of lscache');
+      localStorage.setItem('outside-cache', 'not part of ccache');
       var unexpiredKey = 'unexpiredKey';
       var expiredKey = 'expiredKey';
-      lscache.set(unexpiredKey, 'bla', 1);
-      lscache.set(expiredKey, 'blech', 1/60); // Expire after one second
+      ccache.set(unexpiredKey, 'bla', 1);
+      ccache.set(expiredKey, 'blech', 1/60); // Expire after one second
 
       setTimeout(function() {
-        lscache.flushExpired();
-        equal(lscache.get(unexpiredKey), 'bla', 'We expect unexpired value to survive flush');
-        equal(lscache.get(expiredKey), null, 'We expect expired value to be flushed');
-        equal(localStorage.getItem('outside-cache'), 'not part of lscache', 'We expect localStorage value to still persist');
+        ccache.flushExpired();
+        equal(ccache.get(unexpiredKey), 'bla', 'We expect unexpired value to survive flush');
+        equal(ccache.get(expiredKey), null, 'We expect expired value to be flushed');
+        equal(localStorage.getItem('outside-cache'), 'not part of ccache', 'We expect localStorage value to still persist');
         start();
       }, 1500);
     });
@@ -608,26 +604,26 @@ var startTests = function (lscache) {
   QUnit.start();
 };
 
-if (typeof module !== "undefined" && module.exports) {
+if (typeof module !== 'undefined' && module.exports) {
 
-  var lscache = require('../lscache');
+  var ccache = require('../ccache');
   require('qunit');
-  startTests(lscache);
+  startTests(ccache);
 } else if (typeof define === 'function' && define.amd) {
- 
+
   require.config({
-    baseUrl: "./",
+    baseUrl: './',
     paths: {
-        "qunit": "qunit",
-        "lscache": "../lscache"
-    }
+      'qunit': 'qunit',
+      'ccache': '../ccache',
+    },
   });
 
-  require(['lscache', 'qunit'], function (lscache, QUnit) {
-    startTests(lscache);
+  require(['ccache', 'qunit'], function (ccache, QUnit) { // eslint-disable-line no-unused-vars
+    startTests(ccache);
   });
 } else {
-  // Assuming that lscache has been properly included
-  startTests(lscache);
+  // Assuming that ccache has been properly included
+  startTests(ccache);
 }
-},{"../lscache":1,"qunit":2}]},{},[3]);
+},{"../ccache":1,"qunit":2}]},{},[3]);

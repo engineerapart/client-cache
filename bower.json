@@ -1,8 +1,8 @@
 {
-	"name": "lscache",
-	"version": "1.0.7",
-	"homepage": "https://github.com/pamelafox/lscache",
-	"main": ["lscache.min.js", "lscache.js"],
+	"name": "ccache",
+	"version": "1.0.0",
+	"homepage": "https://github.com/engineerapart/client-cache",
+	"main": ["ccache.min.js", "ccache.js"],
 	"ignore": [
 		"demo",
 		"tests",
@@ -13,6 +13,7 @@
 		"localstorage",
 		"local",
 		"storage",
-		"lscache"
+    "lscache",
+    "ccache"
 	]
 }

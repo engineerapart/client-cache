@@ -2,14 +2,14 @@
   "name": "client-cache",
   "title": "client-cache",
   "description": "A simple library that emulates memcache functions using HTML5 localStorage, sessionStorage, or in-memory storage",
-  "author": "Pamela Fox",
+  "author": "EngineerApart",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/engineerapart/client-cache.git"
   },
   "homepage": "https://github.com/engineerapart/client-cache",
-  "main": "lscache",
+  "main": "ccache",
   "version": "1.0.0",
   "devDependencies": {
     "eslint": "^4.15.0",
@@ -23,7 +23,7 @@
     "browserify-shim": "3.8.x"
   },
   "scripts": {
-    "lint": "eslint ./lscache.js",
+    "lint": "eslint ./ccache.js",
     "test": "grunt test"
   },
   "browserify": {
