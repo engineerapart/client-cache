@@ -23,6 +23,7 @@
     "browserify-shim": "3.8.x"
   },
   "scripts": {
+    "lint": "eslint ./lscache.js",
     "test": "grunt test"
   },
   "browserify": {
