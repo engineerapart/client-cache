@@ -6,9 +6,6 @@
   "extends": [
     "eslint:recommended"
   ],
-  "globals": {
-    "module": true
-  },
   "rules": {
     "indent": "off",
     "no-useless-escape": "off",

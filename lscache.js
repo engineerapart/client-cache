@@ -1,5 +1,5 @@
 /**
- * lscache library
+ * ccache library
  * Copyright (c) 2011, Pamela Fox
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,23 +15,23 @@
  * limitations under the License.
  */
 
-/* global define */
+/* global define, module */
 
 (function (root, factory) {
   if (typeof define === 'function' && define.amd) {
-        // AMD. Register as an anonymous module.
+    // AMD. Register as an anonymous module.
     define([], factory);
   } else if (typeof module !== 'undefined' && module.exports) {
-        // CommonJS/Node module
+    // CommonJS/Node module
     module.exports = factory();
   } else {
-        // Browser globals
-    root.lscache = factory();
+    // Browser globals
+    root.ccache = factory();
   }
 }(this, function () {
 
-  // Prefix for all lscache keys
-  var CACHE_PREFIX = 'lscache-';
+  // Prefix for all ccache keys
+  var CACHE_PREFIX = 'ccache-';
 
   // Suffix for the key name on the expiration items in localStorage
   var CACHE_SUFFIX = '-cacheexpiration';
@@ -53,7 +53,7 @@
   // it's not straightforward due to FF4 issues.
   // It's not run at parse-time as it takes 200ms in Android.
   function supportsStorage() {
-    var key = '__lscachetest__';
+    var key = '__ccachetest__';
     var value = key;
 
     if (cachedStorage !== undefined) {
@@ -186,11 +186,11 @@
   function warn(message, err) {
     if (!warnings) return;
     if (!('console' in window) || typeof window.console.warn !== 'function') return;
-    window.console.warn('lscache - ' + message);
-    if (err) window.console.warn('lscache - The error was: ' + err.message);
+    window.console.warn('ccache - ' + message);
+    if (err) window.console.warn('ccache - The error was: ' + err.message);
   }
 
-  var lscache = {
+  var ccache = {
     /**
      * Stores the value in localStorage. Expires after specified number of minutes.
      * @param {string} key
@@ -317,7 +317,7 @@
     },
 
     /**
-     * Flushes all lscache items and expiry markers without affecting rest of localStorage
+     * Flushes all ccache items and expiry markers without affecting rest of localStorage
      */
     flush: function() {
       if (!supportsStorage()) return;
@@ -328,7 +328,7 @@
     },
 
     /**
-     * Flushes expired lscache items and expiry markers without affecting rest of localStorage
+     * Flushes expired ccache items and expiry markers without affecting rest of localStorage
      */
     flushExpired: function() {
       if (!supportsStorage()) return;
@@ -339,7 +339,7 @@
     },
 
     /**
-     * Appends CACHE_PREFIX so lscache will partition data in to different buckets.
+     * Appends CACHE_PREFIX so ccache will partition data in to different buckets.
      * @param {string} bucket
      */
     setBucket: function(bucket) {
@@ -347,7 +347,7 @@
     },
 
     /**
-     * Resets the string being appended to CACHE_PREFIX so lscache will use the default storage behavior.
+     * Resets the string being appended to CACHE_PREFIX so ccache will use the default storage behavior.
      */
     resetBucket: function() {
       cacheBucket = '';
@@ -362,5 +362,5 @@
   };
 
   // Return the module
-  return lscache;
+  return ccache;
 }));
